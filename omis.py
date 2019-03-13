@@ -63,14 +63,15 @@ def formselect(label, option, index = 0):
 
 
 # ====== 访问网站 =====
-driver.get('http://xxxxxxxxxx/MyOMS/')
+# driver.get('http://101.132.107.121/MyOMS/')
+driver.get('https://test.egolm.com/MyOMS/')
 time.sleep(3)
 
 
 #====== 系统登入 ======
 if driver.find_element_by_xpath("//form[@id='loginForm']"):
-    sendkeys("//input[@id='userID']","xxxx")
-    sendkeys("//input[@id='password']","xxxxx\n")
+    sendkeys("//input[@id='userID']","wrj23")
+    sendkeys("//input[@id='password']","wrj23\n")
 
     click("//input[@placeholder='请选择登录门店']")
     click("//span[contains(text(),'000203.家家公寓')]")

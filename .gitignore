@@ -1,1 +1,4 @@
-export1.csv
+export/
+.DS_Store
+.vscode/
+__pycache__/
