@@ -6,9 +6,18 @@
 ##################
 
 import csv
+import json
 import datetime
+import requests as req
 from os import environ
 from time import sleep
+import hashlib
+
+def md5(str):
+    return hashlib.md5(str.encode()).hexdigest()
+
+
+api_url = 'http://0.0.0.0:3000/flows'
 
 from selenium import webdriver
 from selenium.webdriver.common.action_chains import ActionChains
@@ -18,10 +27,10 @@ from selenium.webdriver.support.ui import WebDriverWait
 
 # driver = webdriver.Chrome('/Users/mxj/Downloads/chromedriver')
 # driver = webdriver.Chrome('/Users/mxj/Downloads/chromedriver_73.0.3683.68')
-# driver = webdriver.Chrome('/Users/mxj/Downloads/chromedriver_74.0.3729.6')
+driver = webdriver.Chrome('/Users/mxj/Downloads/chromedriver_74.0.3729.6')
 
 # need copy geckodriver to /usr/local/bin
-driver = webdriver.Firefox()
+# driver = webdriver.Firefox()
 
 
 driver.implicitly_wait(10)
@@ -43,7 +52,12 @@ def findchild(el, xpath):
 
 
 def findchildren(el, xpath):
-    return el.find_elements_by_xpath(xpath)
+    try:
+        _el = el.find_elements_by_xpath(xpath)
+    except:
+        sleep(2)
+        _el = el.find_elements_by_xpath(xpath)
+    return _el
 
 
 def findlink(text):
@@ -90,7 +104,9 @@ def close():
 
 
 # 全屏
-# driver.fullscreen_window()
+driver.fullscreen_window()
+
+
 
 
 # =================================
@@ -102,96 +118,96 @@ driver.get('https://ec.diwork.com/')
 
 #======= 登录 =======
 click("//a[contains(text(),'登录')]")
-# 先在命令行设置环境变量：export YC_MOBILE=13564792441 && export YC_PASSWORD=Imzhaijiayu1
+# 先在命令行设置环境变量：export YC_MOBILE=xxxxxx && export YC_PASSWORD=xxxxxxx
 
 # LOGIN_USER = environ['YC_MOBILE']
 # LOGIN_PASS = environ['YC_PASSWORD']
 
 # TODO 临时设置，提交代码时清除
-LOGIN_USER = '13564792441'
-LOGIN_PASS = 'Imzhaijiayu1'
+LOGIN_USER = ''
+LOGIN_PASS = ''
 
 sendkeys("//input[@name='mobile']", LOGIN_USER)
 sendkeys("//input[@name='password']", LOGIN_PASS + '\n')
+
 
 
 # 开始
 
 flowStatus = "全部"
 
-# company = "尚敏"
-# company = "永菱"
+# 本地调试文件
+# driver.get('file:///Users/mxj/tryselenium/html/%E9%9D%9E%E5%90%88%E5%90%8C%E4%BB%98%E6%AC%BE.html')
+
+
+companies = ['上海翌洲物业管理有限公司','上海永菱房产发展有限公司','上海尚敏管理咨询有限公司']
+
+# TODO issue 目前完成第一家公司后不能定位下拉菜单, 只能一家一家来: 改 range
+for k in range(2,3):
+
+    company = companies[k]
+
+    # 重置焦点 TODO 
+    # switchtowindow(0)
+    # driver.switch_to.default_content()
+    # driver.switch_to.parent_frame()
+
+    #======= 切换空间 =======
+    # click("//span[@class='fs-qz-dropdown-link']",1)
+    # 改成鼠标移动到上面打开下拉菜单了
+    ele_dropdown=find("//span[@class='fs-qz-dropdown-link']")
+    sleep(2)
+    action.move_to_element(ele_dropdown).perform()
+    # click("/html/body/div[2]/div[1]/div/div[1]/header/div/div[2]",1)
+    sleep(2)
+    # driver.execute_script("document.getElementsByClassName('fs-header-drop-menu')[0].style.display = '';")
+
+    click('//li/span[contains(text(),"' + company + '")]')
 
 
 
+    #======= 切换到数据列表 =======
+    # 点击 审批
+    click('//div[@title="审批"]')
 
-# flowtype = '重大事项申请'
-# flowheads = ['事项名称','制单人','事项描述','日期']
-
-company = "翌洲"
-flowtype = '非合同付款'
-flowheads = ['付款内容','付款金额','付款描述','制单人','日期']
-flowheads_ele = ['input','input','textarea','input','div/input']
-# flowheads = ['付款内容','付款金额','付款描述','收款人名称','开户银行','银行卡账号','制单人','日期']
-# flowheads_ele = ['input','input','textarea','input','input','input','input','div/input']
-
-# waitfor("//span[@class='fs-qz-dropdown-link']")
-# sleep(2)
-#======= 切换空间 =======
-# click("//span[@class='fs-qz-dropdown-link']",1)
-# 改成鼠标移动到上面打开下拉菜单了
-ele_dropdown=find("//span[@class='fs-qz-dropdown-link']")
-sleep(2)
-action.move_to_element(ele_dropdown).perform()
-# click("/html/body/div[2]/div[1]/div/div[1]/header/div/div[2]",1)
-sleep(2)
-click('//li/span[contains(text(),"' + company + '")]')
+    # 点击 BPM后台
+    switchtoframe(0)
+    click('//span[contains(text(),"BPM后台")]')
 
 
+    # 点击 流程调度
 
-#======= 切换到数据列表 =======
-# 点击 审批
-click('//div[@title="审批"]')
+    switchtoframe(0)
+    click('//span[contains(text(),"流程调度")]')
 
-# 点击 BPM后台
-switchtoframe(0)
-click('//span[contains(text(),"BPM后台")]')
+    click('//*[@id="app"]/div[2]/div/div/div[1]/div[3]/div[1]/input') # 20190424 改版下拉选项
+    click('//span[contains(text(),"' + flowStatus + '")]')
 
 
-# 点击 流程调度
-
-switchtoframe(0)
-click('//span[contains(text(),"流程调度")]')
-
-click('//*[@id="app"]/div[2]/div/div/div[1]/div[3]/div[1]/input') # 20190424 改版下拉选项
-click('//span[contains(text(),"' + flowStatus + '")]')
-
-# driver.get('https://yb.yonyoucloud.com/iform_web/static/rt.html#/browse?_=1552484012862&page=iformBrowse&pk_bo=388e72eb-8b86-405f-8cc5-1fe691b9ef37&pk_boins=497475e9-f57b-41bd-9b30-e56e5dabaf78&appsource=approve&sysId=diwork&source=BpmCenter&sso=true')
-
-#======= 获取数据 =======
-# 将数据写入文件
-today = datetime.datetime.today().strftime('%Y%m%d')
-# 取第二列到第四列
-cellrange = range(1,5)
-with open('export/export-' + company + '-' + flowtype +'-' + today+ '.csv', mode='w') as export:
-    export_writer = csv.writer(export, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+    #======= 获取数据 =======
+    # 将数据写入文件
+    today = datetime.datetime.today().strftime('%Y%m%d')
+    
 
     # 标题栏
     headitems = []
     headcell = finds('//div[@class="fs-table__header-wrapper"]/table/thead/tr/th')
-    for i in cellrange:
+
+    for i in range(0,len(headcell)):
         headitems.append(headcell[i].text)
 
-    headitems = headitems + ['流程进度','附件'] + flowheads
-    export_writer.writerow(headitems)
 
-    count = int(find('//li[contains(@class,"number")][last()]').text)
-    print("总页数：",count)
-    for i in range(1,count+1):
+    page_count = int(find('//li[contains(@class,"number")][last()]').text)
+    # page_count=1 # TODO for debug
+    print("总页数：",page_count)
+
+    # 用来存储所有流程数据
+    _flows = []
+
+
+    for i in range(1, page_count+1):
 
         # --- 翻页
-        # TODO 要滚动到显示元素才能点击, 目前点击出错后等待1秒再次尝试
-        # ActionChains(driver).move_to_element(driver.find_element_by_xpath("//div[@class='fs-pagination']")).perform()
         if i > 1:
             xpath_next = "//div[@class='fs-pagination']//li[contains(text(),'" + str(i) + "')]"
             try:
@@ -199,78 +215,99 @@ with open('export/export-' + company + '-' + flowtype +'-' + today+ '.csv', mode
             except:
                 sleep(1)
                 click(xpath_next)
+        
 
         # --- 取数据
+        sleep(2)
         rows = finds('//div[@class="fs-table__body-wrapper"]/table/tbody/tr')
-        for tr in rows:
-            items = []
-            cells = findchildren(tr,'.//td')
-            for i in cellrange:
-                items.append(cells[i].text)
+        for o in range(0,len(rows)):
+            sleep(2)
+            # items = []
+            _flow_formdata = {}
+            cells = findchildren(rows[o],'.//td')
+
+            # 取出列表中的值,取第2列到第7列
+            for j in range(1,7):
+                _flow_formdata[headitems[j]] = cells[j].text
+
+            # 获得单据号
+            _flowid = md5(cells[6].text)
+
 
             # 流程调度列表中点击 单据号
-            if cells[5].text == flowtype:
+            cells[6].click()
+
+            # 切换到打开的窗口
+            switchtowindow(1)
+
+            # --- 获取表单值 ---
+            # 获得流程
+            # _flowstep = find('//*[@id="app"]/div/div/div[2]/div[1]').text.replace('\n', '； ')
+            sleep(3)
+            _flowstep = find('//div[@class="process-preview"]').text.replace('\n', '； ')
+            _flow_formdata['流程进度'] = _flowstep
+
+            # 找到所有字段的容器
+            ele_contains = finds("//div[@id='pane-formcomps']//td//*[@class='comp-title']/..")
+
+            for _ele in ele_contains:
+
+                # 在第一个div 中获得标签名称
+                _ele_t = _ele.find_element_by_tag_name('div')
+                _title = _ele_t.text.replace('* ','')
+                print(_title)
+
+
+
+                # 获得表单内容
+                if '附件' in _title:
+                    _text = _ele.text.replace(_title+'\n','').replace(' .','.').replace('\n','; ')
+                else:
+                    _ele_v = _ele.find_element_by_xpath('.//input | .//textarea | .//span[@class="file-name"]')
+
+                    if _ele_v.tag_name == 'input':
+                        _text = _ele_v.get_attribute('value')
+                    elif _ele_v.tag_name == 'textarea':
+                        _text = _ele_v.get_attribute('textContent')
+                    else:
+                        _text = _ele_v.text
+
+                print(_text)
+
+                _flow_formdata[_title]=_text
+
+            # _flows.append(_flow_formdata)
+
+            print('post to database...')
+            _flow_formdata['id'] = _flowid
+            _flow_formdata['_time'] = str(datetime.datetime.now())
+            _flow_formdata['公司名称'] = company
+            res = req.post(api_url, data=_flow_formdata)
+
+            # 如果记录以及存在, 则尝试更新数据
+            if not res.ok and ('duplicate id' in res.text):
+                res = req.put(api_url + '/' + _flowid, data=_flow_formdata)
             
-                cells[6].click()
-                switchtowindow(1)
+            print(res.status_code, res.reason)
 
-                # --- 获取表单值 ---
-                # 获得 流程定义名称
-                # items.append(find("//span[@class='form-title']").text)
-                # print(find("//span[@class='form-title']").text)
-
-                # 获得 流程进度
-                sleep(2)
-                items.append(find('//*[@id="app"]/div/div/div[2]/div[1]').text.replace('\n', '； '))
-
-                # 获得 附件
-                # items.append(find('//*[@id="pane-formcomps"]/div/div[3]/div/table/tbody/tr/td[1]/div/div/div/div[3]').text.replace('\n', '； '))
-                elefiles = finds('//*[@class="file-name"]')
-                _files = "".join(list(map((lambda x: x.text), elefiles)))
-                items.append(_files)
-                
-                # 获得 表单值
-                j = 0
-
-                # 找到标签包括 xxx 文本的下一个 div, 并获取内部文本,因为这个 div 是隐藏的, 所以只能用 get_attribute("textContent") 获取到
-                for _label in flowheads:
-                    _type = flowheads_ele[j]
-                    j = j + 1
-                    if j > len(flowheads):
-                        break
-                    # find('//div[@class="comp-title" and contains(text(),"付款金额")]/../input')
-
-                    _ele = find('//div[@class="comp-title" and contains(text(),"' + _label + '")]/../'+ _type)
-
-                    if(_type == 'input' or  _type == "div/input"):
-                        _text = _ele.get_attribute('value')
-                    elif( _type == 'textarea'):
-                        _text = _ele.get_attribute('textContent')
-                    
-                        
-
-                    # _text = find('//div[contains(text(),"' + _label + '")]/following-sibling::div').get_attribute('textContent')
-                    
-                    items.append(_text.replace('\n', '； '))
+            # print(_flows)
 
 
-                # 关闭并返回列表窗口
-                driver.close()
-                switchtowindow(0)
+
+            # 关闭并返回列表窗口
+            driver.close()
+            switchtowindow(0)
+
+            # 切换 frame 重新来一遍,保证不出错
+            driver.switch_to.parent_frame()
+            switchtoframe(0)
+            switchtoframe(0)
 
 
-                # 数据写入文件
-                export_writer.writerow(items)
+
+
 
 # ----- DONE -----
 print('DONE')
 
 driver.close()
-
-# findchildren(find('//div[@class="fs-table__body-wrapper"]/table/tbody/tr'),'.//td')[6].click()
-# switchtowindow(1)
-# driver.close()
-# switchtowindow(0)
-
-# s  = '发起审批\n2018-10-17 10:00\nBD\nBD\n同意\n2018-10-17 10:00\n同一审批人自动审批\n驳回制单\n2018-10-23 09:18\n请用尚敏申请，谢谢。'
-# print(s.replace('\n',' | '))
