@@ -12,6 +12,7 @@ import requests as req
 from os import environ
 from time import sleep
 import hashlib
+import traceback
 
 def md5(str):
     return hashlib.md5(str.encode()).hexdigest()
@@ -25,11 +26,10 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
-# driver = webdriver.Chrome('/Users/mxj/Downloads/chromedriver')
-# driver = webdriver.Chrome('/Users/mxj/Downloads/chromedriver_73.0.3683.68')
-driver = webdriver.Chrome('/Users/mxj/Downloads/chromedriver_74.0.3729.6')
+# Chrome 则必须写全路径, Chrome 还需要注意版本和浏览器匹配, 下载地址 https://sites.google.com/a/chromium.org/chromedriver/home
+driver = webdriver.Chrome('/usr/local/bin/chromedriver')
 
-# need copy geckodriver to /usr/local/bin
+# Firefox 的驱动文件 geckodriver 需要复制到 /usr/local/bin/ 目录下，并且代码里不能配置路径，
 # driver = webdriver.Firefox()
 
 
@@ -40,47 +40,99 @@ action = ActionChains(driver)
 #====== 定义快捷方法 ========
 
 def find(xpath):
-    return wait.until(EC.presence_of_element_located((By.XPATH, xpath)))
+    # return wait.until(EC.presence_of_element_located((By.XPATH, xpath)))
+    while True:
+        try:
+            return driver.find_element_by_xpath(xpath)
+            break
+        except:
+            print("重试定位元素...", xpath)
+            sleep(1)
 
 
 def finds(xpath):
-    return driver.find_elements_by_xpath(xpath)
+    # return driver.find_elements_by_xpath(xpath)
+    while True:
+        try:
+            return driver.find_elements_by_xpath(xpath)
+            break
+        except:
+            print("重试定位元素们...", xpath)
+            sleep(1)
 
 
 def findchild(el, xpath):
-    return el.find_element_by_xpath(xpath)
+    # return el.find_element_by_xpath(xpath)
+    while True:
+        try:
+            return el.find_element_by_xpath(xpath)
+            break
+        except:
+            print("重试定位子元素...", xpath)
+            sleep(1)
 
 
 def findchildren(el, xpath):
-    try:
-        _el = el.find_elements_by_xpath(xpath)
-    except:
-        sleep(2)
-        _el = el.find_elements_by_xpath(xpath)
-    return _el
+    # try:
+    #     _el = el.find_elements_by_xpath(xpath)
+    # except:
+    #     sleep(2)
+    #     _el = el.find_elements_by_xpath(xpath)
+    # return _el
+    while True:
+        try:
+            return el.find_elements_by_xpath(xpath)
+            break
+        except:
+            print("重试定位子元素们...", xpath)
+            sleep(1)
 
 
 def findlink(text):
     return driver.find_element_by_link_text(text)
 
 
-def switchtoframe(name):
-    driver.switch_to.frame(name)
+def switchtoframe(xpath):
+    while True:
+        try:
+            _element = driver.find_element_by_xpath(xpath)
+            sleep(1)
+            driver.switch_to.frame(_element)
+            break
+        except:
+            # traceback.print_exc()
+            print("重试切换 frame...", xpath)
+            sleep(1)
 
 
 # 定义 点击 方法
 def click(xpath, delay=1):
-    find(xpath)
-    element = wait.until(EC.element_to_be_clickable((By.XPATH, xpath)))
-    element.click()
-    sleep(delay)
+    # element = find(xpath)
+    # element = wait.until(EC.element_to_be_clickable((By.XPATH, xpath)))
+    while True:
+        try:
+            driver.find_element_by_xpath(xpath).click()
+            break
+        except:
+            # traceback.print_exc()
+            print("重试点击...", xpath)
+            sleep(1)
+    # element.click()
+    # sleep(delay)
 
 
 # 定义 输入字符 方法
 def sendkeys(xpath, keys, delay=.5):
-    wait.until(EC.presence_of_element_located((By.XPATH, xpath))).send_keys(keys)
-    # driver.find_element_by_xpath(xpath).send_keys(keys)
-    sleep(delay)
+    # wait.until(EC.presence_of_element_located((By.XPATH, xpath))).send_keys(keys)
+
+    # sleep(delay)
+    while True:
+        try:
+            return driver.find_element_by_xpath(xpath).send_keys(keys)
+            break
+        except:
+            print("重试填入文字...", xpath, keys)
+            sleep(1)
 
 
 def waitfor(xpath):
@@ -91,6 +143,7 @@ def waitfor(xpath):
             print("继续")
             break
         except:
+            traceback.print_exc()
             print("等待...", xpath)
             sleep(1)
 
@@ -104,7 +157,7 @@ def close():
 
 
 # 全屏
-driver.fullscreen_window()
+# driver.fullscreen_window()
 
 
 
@@ -139,31 +192,38 @@ flowStatus = "全部"
 # 本地调试文件
 # driver.get('file:///Users/mxj/tryselenium/html/%E9%9D%9E%E5%90%88%E5%90%8C%E4%BB%98%E6%AC%BE.html')
 
+# TODO 用户测试或者断线续抓,或者补抓某些页码数据, _end_page 大于实际页数时按实际页数来.
+_start_page = 0
+_end_page = 1
 
 companies = ['上海翌洲物业管理有限公司','上海永菱房产发展有限公司','上海尚敏管理咨询有限公司']
 
 # TODO issue 目前完成第一家公司后不能定位下拉菜单, 只能一家一家来: 改 range
-for k in range(2,3):
-
-    company = companies[k]
-
-    # 重置焦点 TODO 
-    # switchtowindow(0)
-    # driver.switch_to.default_content()
-    # driver.switch_to.parent_frame()
+# for k in range(0,len(companies)):
+for company in companies:
 
     #======= 切换空间 =======
-    # click("//span[@class='fs-qz-dropdown-link']",1)
+    print('切换到空间:', company)
+
     # 改成鼠标移动到上面打开下拉菜单了
-    ele_dropdown=find("//span[@class='fs-qz-dropdown-link']")
-    sleep(2)
-    action.move_to_element(ele_dropdown).perform()
-    # click("/html/body/div[2]/div[1]/div/div[1]/header/div/div[2]",1)
-    sleep(2)
-    # driver.execute_script("document.getElementsByClassName('fs-header-drop-menu')[0].style.display = '';")
+    while True:
+        try:
+            # 通过修改 css 样式直接将下拉菜单显示
+            driver.execute_script("document.getElementsByClassName('fs-header-drop-menu')[0].style.display = '';")
+            sleep(1)
+            _menu_item = find('//li/span[contains(text(),"' + company + '")]')
+            driver.execute_script("arguments[0].click();", _menu_item)
+            # 点击完成后要立即隐藏,否则会遮挡后面链接,造成无法点击
+            break
+        except:
+            sleep(1)
+            driver.switch_to.parent_frame()
+            traceback.print_exc()
 
-    click('//li/span[contains(text(),"' + company + '")]')
-
+    try:
+        driver.execute_script("document.getElementsByClassName('fs-header-drop-menu')[0].style.display = 'none';")
+    except:
+        print('...')
 
 
     #======= 切换到数据列表 =======
@@ -171,13 +231,12 @@ for k in range(2,3):
     click('//div[@title="审批"]')
 
     # 点击 BPM后台
-    switchtoframe(0)
+    switchtoframe('//div[@class="fs-content-main"]/iframe')
     click('//span[contains(text(),"BPM后台")]')
 
 
     # 点击 流程调度
-
-    switchtoframe(0)
+    switchtoframe('//div[@id="content"]/iframe')
     click('//span[contains(text(),"流程调度")]')
 
     click('//*[@id="app"]/div[2]/div/div/div[1]/div[3]/div[1]/input') # 20190424 改版下拉选项
@@ -198,7 +257,11 @@ for k in range(2,3):
 
 
     page_count = int(find('//li[contains(@class,"number")][last()]').text)
-    # page_count=1 # TODO for debug
+
+    # TODO 限定页数,用于测试,或者补抓取某几页数据
+    if _end_page < page_count:
+        page_count = _end_page
+
     print("总页数：",page_count)
 
     # 用来存储所有流程数据
@@ -216,17 +279,26 @@ for k in range(2,3):
                 sleep(1)
                 click(xpath_next)
         
+        # TODO 如果中断,通过设置 _start_page 来快速跳过
+        if i < _start_page:
+            continue
+
 
         # --- 取数据
-        sleep(2)
+        sleep(1)
         rows = finds('//div[@class="fs-table__body-wrapper"]/table/tbody/tr')
         for o in range(0,len(rows)):
-            sleep(2)
+
+            # TODO for debug
+            if o > 0:
+                break
+
+            # sleep(1)
             # items = []
             _flow_formdata = {}
             cells = findchildren(rows[o],'.//td')
 
-            # 取出列表中的值,取第2列到第7列
+            # 取出列表中的值,取第2列到第列7
             for j in range(1,7):
                 _flow_formdata[headitems[j]] = cells[j].text
 
@@ -241,13 +313,9 @@ for k in range(2,3):
             switchtowindow(1)
 
             # --- 获取表单值 ---
-            # 获得流程
-            # _flowstep = find('//*[@id="app"]/div/div/div[2]/div[1]').text.replace('\n', '； ')
-            sleep(3)
-            _flowstep = find('//div[@class="process-preview"]').text.replace('\n', '； ')
-            _flow_formdata['流程进度'] = _flowstep
 
             # 找到所有字段的容器
+            # sleep(1)
             ele_contains = finds("//div[@id='pane-formcomps']//td//*[@class='comp-title']/..")
 
             for _ele in ele_contains:
@@ -268,7 +336,7 @@ for k in range(2,3):
                     if _ele_v.tag_name == 'input':
                         _text = _ele_v.get_attribute('value')
                     elif _ele_v.tag_name == 'textarea':
-                        _text = _ele_v.get_attribute('textContent')
+                        _text = _ele_v.get_attribute('value')
                     else:
                         _text = _ele_v.text
 
@@ -276,21 +344,50 @@ for k in range(2,3):
 
                 _flow_formdata[_title]=_text
 
-            # _flows.append(_flow_formdata)
+
+
+            # 获得流程 
+            # sleep(1)
+            # _flowstep = find('//div[@class="process-preview"]').text.replace('\n', '； ')
+            click('//div[@id="tab-process"]')
+
+            _el_steps = finds('//div[@class="process-detail-gram"]/div[@class="pro-task-item"]')
+
+            _flowsteps = []
+            for _el_step in _el_steps:
+                _flowsteps.append(_el_step.text.replace('\n', ' '))
+
+            print(_flowsteps)
+
+            _flow_formdata['流程进度'] = _flowsteps
+
+
 
             print('post to database...')
             _flow_formdata['id'] = _flowid
             _flow_formdata['_time'] = str(datetime.datetime.now())
             _flow_formdata['公司名称'] = company
-            res = req.post(api_url, data=_flow_formdata)
 
-            # 如果记录以及存在, 则尝试更新数据
-            if not res.ok and ('duplicate id' in res.text):
-                res = req.put(api_url + '/' + _flowid, data=_flow_formdata)
-            
-            print(res.status_code, res.reason)
+            try:
+                res = req.post(api_url, data=_flow_formdata)
+                # 如果记录以及存在, 则尝试更新数据
+                if res.ok:
+                    print('数据添加成功!')
+                else:
+                    if 'duplicate id' in res.text:
+                        print('记录已存在尝试更新...')
+                        res = req.put(api_url + '/' + _flowid, data=_flow_formdata)
+                        if res.ok:
+                            print('数据更新成功!')
+                        else:
+                            print('数据更新失败:',res.status_code , res.reason)
+                    else:
+                        print('数据提交失败:',res.status_code , res.reason)
+                    
+            except:
+                print('ERROR:连接数据库出错!')
+                # traceback.print_exc()
 
-            # print(_flows)
 
 
 
@@ -300,8 +397,12 @@ for k in range(2,3):
 
             # 切换 frame 重新来一遍,保证不出错
             driver.switch_to.parent_frame()
-            switchtoframe(0)
-            switchtoframe(0)
+            switchtoframe('//div[@class="fs-content-main"]/iframe')
+            switchtoframe('//div[@id="content"]/iframe')
+
+    # 完成一个公司所有页的数据抓取后, 回到主 frame
+    driver.switch_to.parent_frame()
+
 
 
 
